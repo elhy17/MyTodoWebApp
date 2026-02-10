@@ -1,26 +1,54 @@
+### Java ###
+*.class
 
+### Maven ###
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# Exclude the wrapper jar if you prefer, but usually good to keep it
+# .mvn/wrapper/maven-wrapper.jar
+
+### Gradle (Just in case you switch) ###
+build/
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+### JetBrains IDE (Rider / IntelliJ IDEA) ###
 .idea/
-*.iml
 *.iws
+*.iml
 *.ipr
 out/
+!**/src/main/**/out/
+!**/src/test/**/out/
 
+### VS Code (If you or a teammate use it) ###
+.vscode/
 
-
-
-.gradle/
-build/
-*.log
-
-
+### macOS System Files ###
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
+._*
 
-
+### Spring Boot ###
+HELP.md
 .env
-application-local.yml
-application-local.properties
+.env.local
+logs/
+*.log
+tms/
 
-*.pid
-*.hprof
-
+### Frontend / Web (If you add Node later) ###
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log

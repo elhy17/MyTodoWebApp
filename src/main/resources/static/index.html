@@ -3,19 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="Styles.css">
     <title>TODO App</title>
-
+    <link rel="stylesheet" href="Styles.css">
 </head>
 <body>
+
 <div class="container">
     <h1 id="pageTitle">TODO App</h1>
 
-  
     <div id="authSection">
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('login')">Login</button>
-            <button class="tab-btn" onclick="switchTab('register')">Register</button>
+            <button class="tab-btn active" onclick="window.switchTab('login')">Login</button>
+            <button class="tab-btn" onclick="window.switchTab('register')">Register</button>
         </div>
 
         <div id="loginForm">
@@ -27,7 +26,7 @@
                 <label>Password</label>
                 <input type="password" id="loginPassword" placeholder="Enter your password">
             </div>
-            <button onclick="login()">Login</button>
+            <button onclick="window.login()">Login</button>
             <div id="loginError" class="error"></div>
         </div>
 
@@ -52,13 +51,16 @@
                 <label>Password</label>
                 <input type="password" id="regPassword" placeholder="Enter password">
             </div>
-            <button onclick="register()">Register</button>
+            <button onclick="window.register()">Register</button>
             <div id="regError" class="error"></div>
         </div>
     </div>
 
     <div id="todoSection" class="hidden">
-        <button class="logout-btn" onclick="logout()">Logout</button>
+        <div class="header-row">
+            <h2>My Tasks</h2>
+            <button class="logout-btn" onclick="window.logout()">Logout</button>
+        </div>
 
         <div class="form-group">
             <label>Task Title</label>
@@ -68,13 +70,12 @@
             <label>Priority (1-5)</label>
             <input type="number" id="taskPriority" min="1" max="5" value="3">
         </div>
-        <button onclick="addTask()">Add Task</button>
+        <button onclick="window.addTask()">Add Task</button>
 
-        <div id="tasksList" style="margin-top: 20px;"></div>
+        <div id="tasksList"></div>
     </div>
 </div>
 
 <script src="script.js"></script>
 </body>
 </html>
-

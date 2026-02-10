@@ -1,10 +1,12 @@
- let currentUser = null;
+let currentUser = null;
 
+// --- Tab Switching ---
 window.switchTab = function(tab) {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const tabBtns = document.querySelectorAll('.tab-btn');
 
+    // Fade out effect
     loginForm.style.opacity = '0';
     registerForm.style.opacity = '0';
 
@@ -20,7 +22,7 @@ window.switchTab = function(tab) {
             if(tabBtns[0]) tabBtns[0].classList.remove('active');
             if(tabBtns[1]) tabBtns[1].classList.add('active');
         }
-
+        // Fade in effect
         setTimeout(() => {
             loginForm.style.opacity = '1';
             registerForm.style.opacity = '1';
@@ -28,6 +30,7 @@ window.switchTab = function(tab) {
     }, 200);
 };
 
+// --- Login Logic ---
 window.login = function() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
@@ -47,9 +50,13 @@ window.login = function() {
     .then(data => {
         if (data && data.id) {
             currentUser = data;
+
+            // Switch UI to Todo List
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('todoSection').classList.remove('hidden');
             document.getElementById('pageTitle').innerHTML = `Hi, <span style="color:#6e8efb">${data.firstname}</span>!`;
+            document.getElementById('loginError').textContent = '';
+
             loadTasks();
         } else {
             shakeElement(document.getElementById('loginForm'));
@@ -58,11 +65,11 @@ window.login = function() {
     })
     .catch(err => {
         console.error(err);
-        document.getElementById('loginError').textContent = 'Server Error (Is Spring Boot running?)';
+        document.getElementById('loginError').textContent = 'Server Error (Check Backend)';
     });
 };
 
-// --- 3. Register Logic ---
+// --- Register Logic ---
 window.register = function() {
     const user = {
         firstname: document.getElementById('regFirstname').value,
@@ -96,6 +103,7 @@ window.register = function() {
     });
 };
 
+// --- Task Logic ---
 window.addTask = function() {
     const title = document.getElementById('taskTitle').value;
     const priority = document.getElementById('taskPriority').value;
@@ -140,7 +148,7 @@ window.loadTasks = function() {
         tasks.forEach((task, index) => {
             const div = document.createElement('div');
             div.className = 'task-item';
-            div.style.animationDelay = `${index * 0.1}s`;
+            div.style.animationDelay = `${index * 0.1}s`; // Staggered entry
 
             let pClass = 'p-low';
             if(task.priority >= 4) pClass = 'p-high';
@@ -151,7 +159,10 @@ window.loadTasks = function() {
                     <div class="task-title">${task.title}</div>
                     <div class="priority-badge ${pClass}">Priority ${task.priority}</div>
                 </div>
-                <button class="delete-btn" onclick="deleteTaskWithAnimation(this, ${task.id})">✕</button>
+                <button class="delete-btn" style="background:#ff6b6b; width:auto; padding:5px 10px; font-size:12px; color: white; border: none; border-radius: 5px; cursor: pointer;"
+                        onclick="window.deleteTaskWithAnimation(this, ${task.id})">
+                    ✕
+                </button>
             `;
             list.appendChild(div);
         });
@@ -161,23 +172,37 @@ window.loadTasks = function() {
 
 window.deleteTaskWithAnimation = function(btnElement, taskId) {
     const taskItem = btnElement.closest('.task-item');
-    taskItem.classList.add('removing');
+    taskItem.classList.add('removing'); // Triggers CSS slideOut
+
     setTimeout(() => {
         fetch(`/api/task/${taskId}`, { method: 'DELETE' })
         .then(() => loadTasks())
         .catch(err => console.error(err));
-    }, 400);
+    }, 400); // Wait for animation
 };
 
+// --- Logout Logic (Fixed) ---
 window.logout = function() {
-    location.reload();
+    currentUser = null;
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('tasksList').innerHTML = '';
+    document.getElementById('todoSection').classList.add('hidden');
+
+    const authSection = document.getElementById('authSection');
+    authSection.style.display = 'block';
+    authSection.classList.remove('hidden');
+
+    document.getElementById('pageTitle').textContent = 'TODO App';
+    window.switchTab('login');
 };
 
+// --- Utility: Shake Animation for Errors ---
 function shakeElement(element) {
     element.style.animation = 'shake 0.5s';
     setTimeout(() => element.style.animation = '', 500);
 }
 
+// Inject CSS Keyframes for Shake
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `
 @keyframes shake {

@@ -1,5 +1,7 @@
 package com.todoApp.demo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -39,7 +41,7 @@ public class User {
 
 
     @Column(nullable = false)
-
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String     pw;
 
 

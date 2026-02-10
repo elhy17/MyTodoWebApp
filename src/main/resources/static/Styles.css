@@ -46,13 +46,22 @@ body {
     transition: transform 0.3s ease;
 }
 
-h1 {
+h1, h2 {
     color: var(--text-dark);
-    margin-bottom: 25px;
     text-align: center;
     font-weight: 600;
 }
 
+h1 { margin-bottom: 25px; }
+
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Tabs */
 .tabs {
     display: flex;
     background: rgba(0,0,0,0.05);
@@ -79,9 +88,16 @@ h1 {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+/* Forms */
 .form-group {
     margin-bottom: 20px;
-    position: relative;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #555;
 }
 
 input {
@@ -123,9 +139,8 @@ button:active {
     transform: scale(0.98);
 }
 
-#tasksList {
-    perspective: 1000px;
-}
+/* Tasks */
+#tasksList { margin-top: 20px; }
 
 .task-item {
     background: white;
@@ -136,19 +151,12 @@ button:active {
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-
     animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 @keyframes slideIn {
-    0% {
-        opacity: 0;
-        transform: translateY(20px) scale(0.95);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+    0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .task-item.removing {
@@ -156,13 +164,7 @@ button:active {
 }
 
 @keyframes slideOut {
-    to {
-        opacity: 0;
-        transform: translateX(100px);
-        max-height: 0;
-        margin: 0;
-        padding: 0;
-    }
+    to { opacity: 0; transform: translateX(100px); max-height: 0; margin: 0; padding: 0; }
 }
 
 .priority-badge {
@@ -182,11 +184,10 @@ button:active {
 .hidden { display: none; }
 .error { color: var(--danger); font-size: 13px; margin-top: 8px; text-align: center; }
 
+/* Logout Specifics */
 .logout-btn {
     background: #ff6b6b;
-    margin-bottom: 20px;
     width: auto;
     padding: 8px 20px;
     font-size: 14px;
-    float: right;
 }

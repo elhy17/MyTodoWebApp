@@ -1,170 +1,190 @@
-let currentUser = null;
+ let currentUser = null;
 
-    function switchTab(tab) {
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const tabBtns = document.querySelectorAll('.tab-btn');
+window.switchTab = function(tab) {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const tabBtns = document.querySelectorAll('.tab-btn');
 
+    loginForm.style.opacity = '0';
+    registerForm.style.opacity = '0';
+
+    setTimeout(() => {
         if (tab === 'login') {
             loginForm.classList.remove('hidden');
             registerForm.classList.add('hidden');
-            tabBtns[0].classList.add('active');
-            tabBtns[1].classList.remove('active');
+            if(tabBtns[0]) tabBtns[0].classList.add('active');
+            if(tabBtns[1]) tabBtns[1].classList.remove('active');
         } else {
             loginForm.classList.add('hidden');
             registerForm.classList.remove('hidden');
-            tabBtns[0].classList.remove('active');
-            tabBtns[1].classList.add('active');
+            if(tabBtns[0]) tabBtns[0].classList.remove('active');
+            if(tabBtns[1]) tabBtns[1].classList.add('active');
         }
+
+        setTimeout(() => {
+            loginForm.style.opacity = '1';
+            registerForm.style.opacity = '1';
+        }, 50);
+    }, 200);
+};
+
+window.login = function() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    if (!email || !password) {
+        shakeElement(document.getElementById('loginForm'));
+        document.getElementById('loginError').textContent = 'Email and password required!';
+        return;
     }
-
-    function register() {
-        const user = {
-            firstname: document.getElementById('regFirstname').value,
-            lastname: document.getElementById('regLastname').value,
-            username: document.getElementById('regUsername').value,
-            email: document.getElementById('regEmail').value,
-            pw: document.getElementById('regPassword').value
-        };
-
-        if (!user.firstname || !user.lastname || !user.username || !user.email || !user.pw) {
-            document.getElementById('regError').textContent = 'All fields are required!';
-            return;
-        }
-
-        fetch('/api/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user)
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Registration failed');
-            return res.json();
-        })
-        .then(data => {
-            alert('Registration successful! Please login.');
-            document.getElementById('regFirstname').value = '';
-            document.getElementById('regLastname').value = '';
-            document.getElementById('regUsername').value = '';
-            document.getElementById('regEmail').value = '';
-            document.getElementById('regPassword').value = '';
-            document.getElementById('regError').textContent = '';
-            switchTab('login');
-        })
-        .catch(err => {
-            document.getElementById('regError').textContent = 'Registration failed: ' + err.message;
-        });
-    }
-
-    function login() {
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-
-        if (!email || !password) {
-            document.getElementById('loginError').textContent = 'Email and password required!';
-            return;
-        }
 
     fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })
     })
+    .then(res => res.json())
+    .then(data => {
+        if (data && data.id) {
+            currentUser = data;
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('todoSection').classList.remove('hidden');
+            document.getElementById('pageTitle').innerHTML = `Hi, <span style="color:#6e8efb">${data.firstname}</span>!`;
+            loadTasks();
+        } else {
+            shakeElement(document.getElementById('loginForm'));
+            document.getElementById('loginError').textContent = 'Invalid Credentials';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById('loginError').textContent = 'Server Error (Is Spring Boot running?)';
+    });
+};
 
-        .then(res => res.json())
-        .then(data => {
-            if (data && data.id != null) {
-                currentUser = data;
-                document.getElementById('authSection').classList.add('hidden');
-                document.getElementById('todoSection').classList.remove('hidden');
-                document.getElementById('pageTitle').textContent = `Welcome, ${data.firstname}!`;
-                document.getElementById('loginError').textContent = '';
+// --- 3. Register Logic ---
+window.register = function() {
+    const user = {
+        firstname: document.getElementById('regFirstname').value,
+        lastname: document.getElementById('regLastname').value,
+        username: document.getElementById('regUsername').value,
+        email: document.getElementById('regEmail').value,
+        pw: document.getElementById('regPassword').value
+    };
 
-                console.log(data.id)
-                loadTasks();
-            } else {
-                document.getElementById('loginError').textContent = 'Invalid email or password!';
-                console.log("error in stocking data");
-            }
-        })
-        .catch(err => {
-            document.getElementById('loginError').textContent = 'Login error: ' + err.message;
-        });
+    if (!user.firstname || !user.lastname || !user.email || !user.pw) {
+        shakeElement(document.getElementById('registerForm'));
+        document.getElementById('regError').textContent = 'All fields are required!';
+        return;
     }
 
-    function logout() {
-        currentUser = null;
-        document.getElementById('authSection').classList.remove('hidden');
-        document.getElementById('todoSection').classList.add('hidden');
-        document.getElementById('pageTitle').textContent = 'TODO App';
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
-    }
+    fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(user)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Registration failed');
+        return res.json();
+    })
+    .then(() => {
+        alert('Registration successful! Please login.');
+        window.switchTab('login');
+    })
+    .catch(err => {
+        document.getElementById('regError').textContent = err.message;
+    });
+};
 
-    function addTask() {
-        const title = document.getElementById('taskTitle').value;
-        const priority = document.getElementById('taskPriority').value;
+window.addTask = function() {
+    const title = document.getElementById('taskTitle').value;
+    const priority = document.getElementById('taskPriority').value;
 
-        if (!title) {
-            alert('Task title is required!');
+    if (!title) return;
+
+    const task = {
+        userId: currentUser.id,
+        title: title,
+        priority: parseInt(priority),
+        categoryId: 2,
+        expense: 5,
+        done: 0
+    };
+
+    fetch('/api/task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(task)
+    })
+    .then(res => res.json())
+    .then(() => {
+        document.getElementById('taskTitle').value = '';
+        loadTasks();
+    });
+};
+
+window.loadTasks = function() {
+    if (!currentUser) return;
+
+    fetch(`/api/tasks/${currentUser.id}`)
+    .then(res => res.json())
+    .then(tasks => {
+        const list = document.getElementById('tasksList');
+        list.innerHTML = '';
+
+        if (tasks.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px">No tasks found 🌴</p>';
             return;
         }
 
-        const task = {
-            userId: currentUser.id,
-            title: title,
-            priority: parseInt(priority),
-            categoryId: 2,
-            expense: 5,
-            done: 0
-        };
+        tasks.forEach((task, index) => {
+            const div = document.createElement('div');
+            div.className = 'task-item';
+            div.style.animationDelay = `${index * 0.1}s`;
 
-        fetch('/api/task', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(task)
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Failed to add task');
-            return res.json();
-        })
-        .then(data => {
-            document.getElementById('taskTitle').value = '';
-            document.getElementById('taskPriority').value = '3';
-            loadTasks();
-        })
-        .catch(err => alert('Error adding task: ' + err.message));
-    }
+            let pClass = 'p-low';
+            if(task.priority >= 4) pClass = 'p-high';
+            else if(task.priority === 3) pClass = 'p-med';
 
-    function loadTasks() {
-        fetch(`/api/tasks/${currentUser.id}`)
-        .then(res => res.json())
-        .then(tasks => {
-            const tasksList = document.getElementById('tasksList');
-            tasksList.innerHTML = '';
+            div.innerHTML = `
+                <div class="task-info">
+                    <div class="task-title">${task.title}</div>
+                    <div class="priority-badge ${pClass}">Priority ${task.priority}</div>
+                </div>
+                <button class="delete-btn" onclick="deleteTaskWithAnimation(this, ${task.id})">✕</button>
+            `;
+            list.appendChild(div);
+        });
+    })
+    .catch(err => console.error("Error loading tasks:", err));
+};
 
-            if (tasks.length === 0) {
-                tasksList.innerHTML = '<p style="color: #999; text-align: center;">No tasks yet. Add one!</p>';
-                return;
-            }
-
-            tasks.forEach(task => {
-                tasksList.innerHTML += `
-                    <div class="task-item">
-                        <div class="task-info">
-                            <div class="task-title">${task.title}</div>
-                            <div class="task-priority">Priority: ${task.priority}/5</div>
-                        </div>
-                        <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
-                    </div>
-                `;
-            });
-        })
-        .catch(err => alert('Error loading tasks: ' + err.message));
-    }
-
-    function deleteTask(taskId) {
+window.deleteTaskWithAnimation = function(btnElement, taskId) {
+    const taskItem = btnElement.closest('.task-item');
+    taskItem.classList.add('removing');
+    setTimeout(() => {
         fetch(`/api/task/${taskId}`, { method: 'DELETE' })
         .then(() => loadTasks())
-        .catch(err => alert('Error deleting task: ' + err.message));
-    }
+        .catch(err => console.error(err));
+    }, 400);
+};
+
+window.logout = function() {
+    location.reload();
+};
+
+function shakeElement(element) {
+    element.style.animation = 'shake 0.5s';
+    setTimeout(() => element.style.animation = '', 500);
+}
+
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  50% { transform: translateX(10px); }
+  75% { transform: translateX(-10px); }
+  100% { transform: translateX(0); }
+}`;
+document.head.appendChild(styleSheet);

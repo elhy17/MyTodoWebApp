@@ -1,4 +1,4 @@
-# MyTodoWebApp ✅
+# MyTodoWebApp 
 
 A full-stack **Todo Web Application** with user authentication and task management.  
 Built using **Spring Boot**, **MySQL**, and a simple **HTML / CSS / JavaScript** frontend.

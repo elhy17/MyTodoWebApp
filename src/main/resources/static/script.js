@@ -1,240 +1,158 @@
 let currentUser = null;
 
-// --- Tab Switching ---
-window.switchTab = function(tab) {
+window.switchTab = function (tab) {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    const tabBtns = document.querySelectorAll('.tab-btn');
-
-    // Fade out effect
-    loginForm.style.opacity = '0';
-    registerForm.style.opacity = '0';
-
-    setTimeout(() => {
-        if (tab === 'login') {
-            loginForm.classList.remove('hidden');
-            registerForm.classList.add('hidden');
-            if(tabBtns[0]) tabBtns[0].classList.add('active');
-            if(tabBtns[1]) tabBtns[1].classList.remove('active');
-        } else {
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
-            if(tabBtns[0]) tabBtns[0].classList.remove('active');
-            if(tabBtns[1]) tabBtns[1].classList.add('active');
-        }
-        // Fade in effect
-        setTimeout(() => {
-            loginForm.style.opacity = '1';
-            registerForm.style.opacity = '1';
-        }, 50);
-    }, 200);
+    const buttons = document.querySelectorAll('.tab-btn');
+    loginForm.classList.toggle('hidden', tab !== 'login');
+    registerForm.classList.toggle('hidden', tab !== 'register');
+    buttons[0].classList.toggle('active', tab === 'login');
+    buttons[1].classList.toggle('active', tab === 'register');
 };
 
-// --- Login Logic ---
-window.login = function() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    if (!email || !password) {
-        shakeElement(document.getElementById('loginForm'));
-        document.getElementById('loginError').textContent = 'Email and password required!';
-        return;
+async function csrfToken() {
+    if (!document.cookie.split('; ').some(cookie => cookie.startsWith('XSRF-TOKEN='))) {
+        await fetch('/api/csrf');
     }
+    const tokenCookie = document.cookie.split('; ').find(cookie => cookie.startsWith('XSRF-TOKEN='));
+    return tokenCookie ? decodeURIComponent(tokenCookie.substring('XSRF-TOKEN='.length)) : '';
+}
 
-    fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, password: password })
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data && data.id) {
-            currentUser = data;
+async function apiRequest(url, options = {}) {
+    const method = (options.method || 'GET').toUpperCase();
+    const headers = new Headers(options.headers || {});
+    if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+        headers.set('X-XSRF-TOKEN', await csrfToken());
+    }
+    const response = await fetch(url, { ...options, headers, credentials: 'same-origin' });
+    if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.detail || `Request failed (${response.status})`);
+    }
+    if (response.status === 204) return null;
+    return response.json();
+}
 
-            // Switch UI to Todo List
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('todoSection').classList.remove('hidden');
-            document.getElementById('pageTitle').innerHTML = `Hi, <span style="color:#6e8efb">${data.firstname}</span>!`;
-            document.getElementById('loginError').textContent = '';
+function showUser(user) {
+    currentUser = user;
+    document.getElementById('authSection').style.display = 'none';
+    document.getElementById('todoSection').classList.remove('hidden');
+    document.getElementById('pageTitle').textContent = `Hi, ${user.firstname}!`;
+    loadTasks();
+}
 
-            loadTasks();
-        } else {
-            shakeElement(document.getElementById('loginForm'));
-            document.getElementById('loginError').textContent = 'Invalid Credentials';
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        document.getElementById('loginError').textContent = 'Server Error (Check Backend)';
-    });
+window.login = async function () {
+    const error = document.getElementById('loginError');
+    try {
+        const user = await apiRequest('/api/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: document.getElementById('loginEmail').value,
+                password: document.getElementById('loginPassword').value
+            })
+        });
+        error.textContent = '';
+        showUser(user);
+    } catch (exception) {
+        error.textContent = exception.message;
+    }
 };
 
-// --- Register Logic ---
-window.register = function() {
-    const user = {
-        firstname: document.getElementById('regFirstname').value,
-        lastname: document.getElementById('regLastname').value,
-        username: document.getElementById('regUsername').value,
-        email: document.getElementById('regEmail').value,
-        pw: document.getElementById('regPassword').value
-    };
-
-    if (!user.firstname || !user.lastname || !user.email || !user.pw) {
-        shakeElement(document.getElementById('registerForm'));
-        document.getElementById('regError').textContent = 'All fields are required!';
-        return;
-    }
-
-    fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error('Registration failed');
-        return res.json();
-    })
-    .then(() => {
-        alert('Registration successful! Please login.');
+window.register = async function () {
+    const error = document.getElementById('regError');
+    try {
+        await apiRequest('/api/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                firstname: document.getElementById('regFirstname').value,
+                lastname: document.getElementById('regLastname').value,
+                username: document.getElementById('regUsername').value,
+                email: document.getElementById('regEmail').value,
+                pw: document.getElementById('regPassword').value
+            })
+        });
+        error.textContent = 'Registration successful. Please log in.';
         window.switchTab('login');
-    })
-    .catch(err => {
-        document.getElementById('regError').textContent = err.message;
-    });
+    } catch (exception) {
+        error.textContent = exception.message;
+    }
 };
 
-// --- Task Logic ---
-window.addTask = function() {
+window.addTask = async function () {
     const title = document.getElementById('taskTitle').value;
-    const priority = document.getElementById('taskPriority').value;
-
-    if (!title) return;
-
-    const task = {
-        userId: currentUser.id,
-        title: title,
-        priority: parseInt(priority),
-        categoryId: 2,
-        expense: 5,
-        done: 0
-    };
-
-    fetch('/api/task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(task)
-    })
-    .then(res => res.json())
-    .then(() => {
+    if (!title.trim()) return;
+    try {
+        await apiRequest('/api/task', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, priority: Number(document.getElementById('taskPriority').value), categoryId: 2, expense: 5, done: 0 })
+        });
         document.getElementById('taskTitle').value = '';
-        loadTasks();
-    });
+        await loadTasks();
+    } catch (exception) {
+        console.error(exception);
+    }
 };
 
-window.loadTasks = function() {
+window.loadTasks = async function () {
     if (!currentUser) return;
-
-    fetch(`/api/tasks/${currentUser.id}`)
-    .then(res => res.json())
-    .then(tasks => {
+    try {
+        const tasks = await apiRequest('/api/tasks');
         const list = document.getElementById('tasksList');
-        list.innerHTML = '';
-
-        if (tasks.length === 0) {
-            list.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px">No tasks found 🌴</p>';
+        list.replaceChildren();
+        if (!tasks.length) {
+            const empty = document.createElement('p');
+            empty.textContent = 'No tasks found yet.';
+            list.appendChild(empty);
             return;
         }
-
-
-        tasks.forEach((task, index) => {
-            const div = document.createElement('div');
-            div.className = 'task-item';
-            div.style.animationDelay = `${index * 0.1}s`;
-
-            let pClass = 'p-low';
-            if (task.priority >= 4) pClass = 'p-high';
-            else if (task.priority === 3) pClass = 'p-med';
-
-            // Container for task information
-            const taskInfo = document.createElement('div');
-            taskInfo.className = 'task-info';
-
-            // Display user input as text, not HTML
+        tasks.forEach(task => {
+            const item = document.createElement('div');
+            item.className = 'task-item';
+            const info = document.createElement('div');
+            info.className = 'task-info';
             const title = document.createElement('div');
             title.className = 'task-title';
             title.textContent = task.title;
-
             const priority = document.createElement('div');
-            priority.className = `priority-badge ${pClass}`;
+            priority.className = `priority-badge ${task.priority >= 4 ? 'p-high' : task.priority === 3 ? 'p-med' : 'p-low'}`;
             priority.textContent = `Priority ${task.priority}`;
-
-            taskInfo.appendChild(title);
-            taskInfo.appendChild(priority);
-
-            // Create delete button safely
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.textContent = '✕';
-
-            deleteBtn.style.cssText =
-                'background:#ff6b6b; width:auto; padding:5px 10px; ' +
-                'font-size:12px; color:white; border:none; ' +
-                'border-radius:5px; cursor:pointer;';
-
-            deleteBtn.addEventListener('click', function () {
-                window.deleteTaskWithAnimation(this, task.id);
-            });
-
-            div.appendChild(taskInfo);
-            div.appendChild(deleteBtn);
-
-            list.appendChild(div);
+            info.append(title, priority);
+            const remove = document.createElement('button');
+            remove.className = 'delete-btn';
+            remove.textContent = 'Delete';
+            remove.addEventListener('click', () => window.deleteTaskWithAnimation(remove, task.id));
+            item.append(info, remove);
+            list.appendChild(item);
         });
-
-    })
-    .catch(err => console.error("Error loading tasks:", err));
+    } catch (exception) {
+        if (exception.message.includes('401')) window.logout();
+        else console.error(exception);
+    }
 };
 
-window.deleteTaskWithAnimation = function(btnElement, taskId) {
-    const taskItem = btnElement.closest('.task-item');
-    taskItem.classList.add('removing'); // Triggers CSS slideOut
-
-    setTimeout(() => {
-        fetch(`/api/task/${taskId}`, { method: 'DELETE' })
-        .then(() => loadTasks())
-        .catch(err => console.error(err));
-    }, 400); // Wait for animation
+window.deleteTaskWithAnimation = async function (button, taskId) {
+    button.closest('.task-item').classList.add('removing');
+    window.setTimeout(async () => {
+        try {
+            await apiRequest(`/api/task/${taskId}`, { method: 'DELETE' });
+            await loadTasks();
+        } catch (exception) {
+            console.error(exception);
+        }
+    }, 400);
 };
 
-// --- Logout Logic (Fixed) ---
-window.logout = function() {
+window.logout = async function () {
+    try { await apiRequest('/api/logout', { method: 'POST' }); } catch (exception) { console.error(exception); }
     currentUser = null;
     document.getElementById('taskTitle').value = '';
-    document.getElementById('tasksList').innerHTML = '';
+    document.getElementById('tasksList').replaceChildren();
     document.getElementById('todoSection').classList.add('hidden');
-
-    const authSection = document.getElementById('authSection');
-    authSection.style.display = 'block';
-    authSection.classList.remove('hidden');
-
+    document.getElementById('authSection').style.display = 'block';
     document.getElementById('pageTitle').textContent = 'TODO App';
     window.switchTab('login');
 };
 
-// --- Utility: Shake Animation for Errors ---
-function shakeElement(element) {
-    element.style.animation = 'shake 0.5s';
-    setTimeout(() => element.style.animation = '', 500);
-}
-
-// Inject CSS Keyframes for Shake
-const styleSheet = document.createElement("style");
-styleSheet.innerText = `
-@keyframes shake {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-10px); }
-  50% { transform: translateX(10px); }
-  75% { transform: translateX(-10px); }
-  100% { transform: translateX(0); }
-}`;
-document.head.appendChild(styleSheet);
+fetch('/api/me').then(response => response.ok ? response.json() : null).then(user => {
+    if (user) showUser(user);
+}).catch(() => {});

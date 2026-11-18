@@ -43,9 +43,18 @@ out/
 HELP.md
 .env
 .env.local
+.env.*
+!.env.example
 logs/
 *.log
 tms/
+
+# Local key material and runtime output
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
 
 ### Frontend / Web (If you add Node later) ###
 node_modules/

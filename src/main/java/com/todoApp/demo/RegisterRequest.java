@@ -8,21 +8,21 @@ import jakarta.validation.constraints.Size;
 // introduced this record to make sure that no user id comes with a request 'security reasons'
 public record RegisterRequest(
 
-        @NotBlank
+        @NotBlank @Size(max = 80)
         String firstname,
 
-        @NotBlank
+        @NotBlank @Size(max = 80)
         String lastname,
 
-        @NotBlank
+        @NotBlank @Size(min = 3, max = 50)
         String username,
 
-        @NotBlank
+        @NotBlank @Size(max = 254)
         @Email
         String email,
 
         @NotBlank
-        @Size(min = 8)
+        @Size(min = 8, max = 72)
         String pw
 
 ) {}

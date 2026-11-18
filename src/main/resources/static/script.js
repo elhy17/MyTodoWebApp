@@ -145,27 +145,52 @@ window.loadTasks = function() {
             return;
         }
 
+
         tasks.forEach((task, index) => {
             const div = document.createElement('div');
             div.className = 'task-item';
-            div.style.animationDelay = `${index * 0.1}s`; // Staggered entry
+            div.style.animationDelay = `${index * 0.1}s`;
 
             let pClass = 'p-low';
-            if(task.priority >= 4) pClass = 'p-high';
-            else if(task.priority === 3) pClass = 'p-med';
+            if (task.priority >= 4) pClass = 'p-high';
+            else if (task.priority === 3) pClass = 'p-med';
 
-            div.innerHTML = `
-                <div class="task-info">
-                    <div class="task-title">${task.title}</div>
-                    <div class="priority-badge ${pClass}">Priority ${task.priority}</div>
-                </div>
-                <button class="delete-btn" style="background:#ff6b6b; width:auto; padding:5px 10px; font-size:12px; color: white; border: none; border-radius: 5px; cursor: pointer;"
-                        onclick="window.deleteTaskWithAnimation(this, ${task.id})">
-                    ✕
-                </button>
-            `;
+            // Container for task information
+            const taskInfo = document.createElement('div');
+            taskInfo.className = 'task-info';
+
+            // Display user input as text, not HTML
+            const title = document.createElement('div');
+            title.className = 'task-title';
+            title.textContent = task.title;
+
+            const priority = document.createElement('div');
+            priority.className = `priority-badge ${pClass}`;
+            priority.textContent = `Priority ${task.priority}`;
+
+            taskInfo.appendChild(title);
+            taskInfo.appendChild(priority);
+
+            // Create delete button safely
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.textContent = '✕';
+
+            deleteBtn.style.cssText =
+                'background:#ff6b6b; width:auto; padding:5px 10px; ' +
+                'font-size:12px; color:white; border:none; ' +
+                'border-radius:5px; cursor:pointer;';
+
+            deleteBtn.addEventListener('click', function () {
+                window.deleteTaskWithAnimation(this, task.id);
+            });
+
+            div.appendChild(taskInfo);
+            div.appendChild(deleteBtn);
+
             list.appendChild(div);
         });
+
     })
     .catch(err => console.error("Error loading tasks:", err));
 };

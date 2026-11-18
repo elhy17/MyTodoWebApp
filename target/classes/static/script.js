@@ -1,6 +1,5 @@
 let currentUser = null;
 
-// --- Tab Switching ---
 window.switchTab = function(tab) {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');

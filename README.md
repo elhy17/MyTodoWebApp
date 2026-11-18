@@ -52,6 +52,3 @@ Mutating requests require the `X-XSRF-TOKEN` header matching the `XSRF-TOKEN` co
 
 Run `./mvnw verify` (Windows: `mvnw.cmd verify`). Tests use an in-memory H2 database and do not need MySQL credentials.
 
-## Credential rotation required
-
-The repository previously contained a database password and a TLS keystore/password. Removing them from the current working tree does not revoke previously exposed values or remove them from published Git history. Rotate the database account password and replace/reissue the TLS private key and certificate outside this repository. Then update the deployment environment or secret manager with the new values, verify the deployed service, and revoke the old database credential and certificate/key. Git history has not been rewritten.
